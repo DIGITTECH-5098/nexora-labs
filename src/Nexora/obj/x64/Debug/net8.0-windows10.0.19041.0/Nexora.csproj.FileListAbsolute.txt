@@ -1,0 +1,1 @@
+/home/runner/work/nexora-labs/nexora-labs/src/Nexora/obj/x64/Debug/net8.0-windows10.0.19041.0/Nexora.csproj.AssemblyReference.cache

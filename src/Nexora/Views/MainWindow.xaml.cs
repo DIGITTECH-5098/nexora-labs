@@ -9,8 +9,10 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
         Title = "Nexora";
-        DataContext = viewModel;
-        Width = 1440;
-        Height = 920;
+
+        if (Content is FrameworkElement root)
+        {
+            root.DataContext = viewModel;
+        }
     }
 }

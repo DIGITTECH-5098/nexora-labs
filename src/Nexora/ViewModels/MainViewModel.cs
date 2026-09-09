@@ -11,6 +11,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly HealthScoreService _healthScoreService;
     private readonly RecommendationService _recommendationService;
     private int _healthScore;
+    private bool _hasScanResults;
     private bool _isScanning;
     private string _scanStatus = "Ready to scan your PC.";
     private string _cpuUsageText = "Not scanned yet";
@@ -57,16 +58,17 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    public string HealthScoreText => $"{HealthScore:0}";
+    public string HealthScoreText => _hasScanResults ? $"{HealthScore:0}" : "--";
 
-    public string HealthSummary => HealthScore switch
-    {
-        >= 85 => "Healthy",
-        >= 70 => "Stable",
-        >= 50 => "Needs attention",
-        > 0 => "Poor",
-        _ => "Not scanned"
-    };
+    public string HealthSummary => !_hasScanResults
+        ? "Run a scan"
+        : HealthScore switch
+        {
+            >= 85 => "Healthy",
+            >= 70 => "Stable",
+            >= 50 => "Needs attention",
+            _ => "Poor"
+        };
 
     public bool IsScanning
     {
@@ -129,10 +131,13 @@ public sealed class MainViewModel : ObservableObject
             var progress = new Progress<string>(status => ScanStatus = status);
             var snapshot = await _systemDiagnosticsService.ScanAsync(progress);
             HealthScore = _healthScoreService.Calculate(snapshot);
+            _hasScanResults = true;
+            OnPropertyChanged(nameof(HealthScoreText));
+            OnPropertyChanged(nameof(HealthSummary));
 
             CpuUsageText = $"{snapshot.CpuUsagePercent:F1}% current usage";
-            RamUsageText = $"{snapshot.MemoryUsagePercent:F1}% used • {FormatBytes(snapshot.UsedMemoryBytes)} / {FormatBytes(snapshot.TotalMemoryBytes)}";
-            DiskUsageText = $"{snapshot.DiskUsagePercent:F1}% used • {FormatBytes((ulong)snapshot.SystemDriveFreeBytes)} free on {snapshot.SystemDriveName}";
+            RamUsageText = $"{snapshot.MemoryUsagePercent:F1}% used • {FormatBytes(snapshot.UsedMemoryBytes)} used • {FormatBytes(snapshot.AvailableMemoryBytes)} available • {FormatBytes(snapshot.TotalMemoryBytes)} total";
+            DiskUsageText = $"{snapshot.DiskUsagePercent:F1}% used • {FormatBytes((ulong)snapshot.SystemDriveFreeBytes)} free • {FormatBytes((ulong)snapshot.SystemDriveTotalBytes)} total on {snapshot.SystemDriveName}";
             WindowsVersionText = $"{snapshot.WindowsVersion}\n{snapshot.ComputerName}\n{snapshot.ProcessorName}";
             UptimeText = FormatUptime(snapshot.Uptime);
 
